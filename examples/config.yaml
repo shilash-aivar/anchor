@@ -1,0 +1,19 @@
+shell:
+  default_project: ""
+
+options:
+  confirm_production: true
+  announce_context: true
+  audit_log: true
+  block_dangerous: true
+  dry_run_production: false
+
+hooks:
+  pre_use: ""
+  post_use: ""
+  pre_apply: ""
+
+# SSO defaults (optional — profiles live in ~/.aws/config)
+sso:
+  start_url: https://your-org.awsapps.com/start
+  region: us-east-1

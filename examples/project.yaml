@@ -1,0 +1,21 @@
+name: client-a
+aws_profile: client-a-admin
+account_id: "123456789012"
+region: us-east-1
+tier: production
+cluster: client-a-prod
+context_alias: client-a
+default_namespace: app
+require_confirm: true
+confirm_text: client-a
+
+notes: |
+  Billing API only. Deploy: helm upgrade app ./chart -n app
+  Do not touch namespace: legacy
+
+env:
+  HELM_VALUES: ./values/client-a.yaml
+
+links:
+  runbook: https://wiki.example.com/runbooks/client-a
+  grafana: https://grafana.example.com/d/client-a

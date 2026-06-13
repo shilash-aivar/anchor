@@ -1,0 +1,17 @@
+# Binaries
+/ctxly
+/bin/
+/dist/
+
+# Go
+*.exe
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
