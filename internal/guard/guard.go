@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"ctxly/internal/config"
+	"anchor/internal/config"
 )
 
 func ConfirmProjectSwitch(p *config.Project, globalConfirm bool) error {

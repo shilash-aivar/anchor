@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"ctxly/internal/config"
-	"ctxly/internal/session"
+	"anchor/internal/config"
+	"anchor/internal/session"
 )
 
 var dangerousPatterns = []string{
@@ -34,7 +34,7 @@ func CheckMutating(s *session.State, p *config.Project, cfg *config.Config, verb
 	}
 
 	if cfg != nil && cfg.Options.AnnounceContext {
-		fmt.Fprintf(os.Stderr, "[ctxly] project=%s context=%s namespace=%s tier=%s\n",
+		fmt.Fprintf(os.Stderr, "[anchor] project=%s context=%s namespace=%s tier=%s\n",
 			s.Project, s.KubeContext, s.Namespace, s.Tier)
 	}
 	return nil

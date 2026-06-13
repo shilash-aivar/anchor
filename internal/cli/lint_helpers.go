@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"ctxly/internal/kubecfg"
+	"anchor/internal/kubecfg"
 )
 
 func lintIssues() ([]kubecfg.LintIssue, error) {

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"ctxly/internal/config"
+	"anchor/internal/config"
 )
 
 type RecentEntry struct {

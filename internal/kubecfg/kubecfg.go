@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"ctxly/internal/config"
+	"anchor/internal/config"
 )
 
 type ContextInfo struct {
@@ -115,7 +115,7 @@ func LintAll() ([]LintIssue, error) {
 		if !projectSet[name] {
 			issues = append(issues, LintIssue{
 				Level: "warn", Project: name,
-				Message: "orphan kubeconfig without project definition — run ctxly prune",
+				Message: "orphan kubeconfig without project definition — run anchor prune",
 			})
 		}
 	}

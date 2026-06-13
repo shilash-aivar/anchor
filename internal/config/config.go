@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	AppDirName  = "ctxly"
+	AppDirName  = "anchor"
 	ConfigFile  = "config.yaml"
 	StateFile   = "state.json"
 	ProjectsDir = "projects"
@@ -125,6 +125,7 @@ func AuditPath() (string, error) {
 }
 
 func EnsureConfigDir() (string, error) {
+	maybeMigrateFromLegacy()
 	dir, err := ConfigDir()
 	if err != nil {
 		return "", err
@@ -279,4 +280,20 @@ func LoadAllProjects() ([]*Project, error) {
 		out = append(out, p)
 	}
 	return out, nil
+}
+
+func maybeMigrateFromLegacy() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	oldDir := filepath.Join(home, ".config", "ctxly")
+	newDir := filepath.Join(home, ".config", AppDirName)
+	if _, err := os.Stat(newDir); err == nil {
+		return
+	}
+	if _, err := os.Stat(oldDir); err != nil {
+		return
+	}
+	_ = os.Rename(oldDir, newDir)
 }

@@ -4,27 +4,27 @@ import (
 	"fmt"
 	"os"
 
-	"ctxly/internal/config"
-	"ctxly/internal/session"
+	"anchor/internal/config"
+	"anchor/internal/session"
 
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ctxly",
+	Use:   "anchor",
 	Short: "DevOps context CLI — AWS profile, EKS cluster, and namespace in one session",
-	Long: `ctxly is a session-first CLI for DevOps engineers working across
+	Long: `anchor is a session-first CLI for DevOps engineers working across
 multiple AWS accounts and EKS clusters.
 
 Switch everything at once:
-  ctxly use my-client
-  ctxly project use my-client
+  anchor use my-client
+  anchor project use my-client
 
 Then run daily ops:
-  ctxly logs api
-  ctxly exec
-  ctxly ui
-  ctxly pf svc/api 8080:80`,
+  anchor logs api
+  anchor exec
+  anchor ui
+  anchor pf svc/api 8080:80`,
 	SilenceUsage: true,
 }
 
@@ -43,7 +43,7 @@ func activeSession() (*session.State, *config.Project, error) {
 		return nil, nil, err
 	}
 	if s == nil {
-		return nil, nil, fmt.Errorf("no active project — run `ctxly use` or `ctxly project use <name>`")
+		return nil, nil, fmt.Errorf("no active project — run `anchor use` or `anchor project use <name>`")
 	}
 	p, err := config.LoadProject(s.Project)
 	if err != nil {
@@ -82,6 +82,8 @@ func init() {
 		lintCmd,
 		pruneCmd,
 		validateCmd,
+		syncCmd,
+		promptCmd,
 	)
 	registerCompletions()
 }

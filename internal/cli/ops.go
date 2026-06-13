@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"ctxly/internal/audit"
-	"ctxly/internal/config"
-	"ctxly/internal/guard"
-	"ctxly/internal/kube"
-	"ctxly/internal/picker"
-	"ctxly/internal/session"
+	"anchor/internal/audit"
+	"anchor/internal/config"
+	"anchor/internal/guard"
+	"anchor/internal/kube"
+	"anchor/internal/picker"
+	"anchor/internal/session"
 
 	"github.com/spf13/cobra"
 )
@@ -25,7 +25,7 @@ var logsCmd = &cobra.Command{
 		}
 		query := strings.Join(args, " ")
 		if query == "" {
-			exitErr(fmt.Errorf("usage: ctxly logs <deployment|pod-prefix>"))
+			exitErr(fmt.Errorf("usage: anchor logs <deployment|pod-prefix>"))
 			return
 		}
 		if _, err := kube.LookPath("stern"); err != nil {
@@ -133,7 +133,7 @@ var kCmd = &cobra.Command{
 			return
 		}
 		if len(args) == 0 {
-			exitErr(fmt.Errorf("usage: ctxly k <kubectl args...>"))
+			exitErr(fmt.Errorf("usage: anchor k <kubectl args...>"))
 			return
 		}
 		if err := runGuardedKubectl(s, p, args); err != nil {

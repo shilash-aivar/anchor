@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"ctxly/internal/config"
-	"ctxly/internal/picker"
-	"ctxly/internal/session"
-	"ctxly/internal/use"
+	"anchor/internal/config"
+	"anchor/internal/picker"
+	"anchor/internal/session"
+	"anchor/internal/use"
 
 	"github.com/spf13/cobra"
 )
@@ -29,8 +29,8 @@ var projectListCmd = &cobra.Command{
 		}
 		if len(names) == 0 {
 			fmt.Println("No projects configured.")
-			fmt.Println("  ctxly project add")
-			fmt.Println("  or copy examples/project.yaml → ~/.config/ctxly/projects/")
+			fmt.Println("  anchor project add")
+			fmt.Println("  or copy examples/project.yaml → ~/.config/anchor/projects/")
 			return
 		}
 		active, _ := session.Load()
@@ -67,7 +67,7 @@ var projectUseCmd = &cobra.Command{
 				return
 			}
 			if len(names) == 0 {
-				exitErr(fmt.Errorf("no projects — run `ctxly project add`"))
+				exitErr(fmt.Errorf("no projects — run `anchor project add`"))
 				return
 			}
 			name, err = picker.Choose("Select project:", names)
@@ -82,7 +82,7 @@ var projectUseCmd = &cobra.Command{
 			exitErr(err)
 		}
 		use.PrintSuccess(r)
-		fmt.Println("\nShell hook: eval \"$(ctxly env --shell zsh)\"")
+		fmt.Println("\nShell hook: eval \"$(anchor env --shell zsh)\"")
 	},
 }
 
@@ -168,7 +168,7 @@ func runProjectAdd(args []string) error {
 	}
 	path, _ := config.ProjectPath(name)
 	fmt.Printf("✓ Wrote project config: %s\n", path)
-	fmt.Printf("  Activate with: ctxly project use %s\n", name)
+	fmt.Printf("  Activate with: anchor project use %s\n", name)
 	return nil
 }
 

@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"ctxly/internal/config"
-	"ctxly/internal/kubecfg"
-	"ctxly/internal/picker"
+	"anchor/internal/config"
+	"anchor/internal/kubecfg"
+	"anchor/internal/picker"
 
 	"github.com/spf13/cobra"
 )
@@ -106,7 +106,7 @@ func runProjectImport(cmd *cobra.Command) error {
 		return fmt.Errorf("saved project but kubeconfig copy failed: %w", err)
 	}
 	fmt.Printf("✓ Imported project %q from context %q\n", name, ctxName)
-	fmt.Printf("  Run: ctxly project use %s\n", name)
+	fmt.Printf("  Run: anchor project use %s\n", name)
 	return nil
 }
 

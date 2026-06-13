@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/exec"
 
-	"ctxly/internal/config"
-	"ctxly/internal/session"
+	"anchor/internal/config"
+	"anchor/internal/session"
 )
 
 func RunHook(path string, s *session.State) error {
@@ -18,11 +18,11 @@ func RunHook(path string, s *session.State) error {
 	}
 	cmd := exec.Command(path)
 	cmd.Env = append(os.Environ(),
-		"CTXLY_PROJECT="+s.Project,
-		"CTXLY_TIER="+s.Tier,
-		"CTXLY_NAMESPACE="+s.Namespace,
-		"CTXLY_KUBE_CONTEXT="+s.KubeContext,
-		"CTXLY_AWS_PROFILE="+s.AWSProfile,
+		"ANCHOR_PROJECT="+s.Project,
+		"ANCHOR_TIER="+s.Tier,
+		"ANCHOR_NAMESPACE="+s.Namespace,
+		"ANCHOR_KUBE_CONTEXT="+s.KubeContext,
+		"ANCHOR_AWS_PROFILE="+s.AWSProfile,
 		"KUBECONFIG="+s.Kubeconfig,
 	)
 	cmd.Stdout = os.Stdout

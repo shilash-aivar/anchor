@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"ctxly/internal/kube"
-	"ctxly/internal/session"
+	"anchor/internal/kube"
+	"anchor/internal/session"
 
 	"github.com/spf13/cobra"
 )

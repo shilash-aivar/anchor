@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"ctxly/internal/cli"
+	"anchor/internal/cli"
 )
 
 func main() {

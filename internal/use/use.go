@@ -5,13 +5,13 @@ import (
 	"os"
 	"os/exec"
 
-	"ctxly/internal/audit"
-	"ctxly/internal/awsx"
-	"ctxly/internal/config"
-	"ctxly/internal/guard"
-	"ctxly/internal/hooks"
-	"ctxly/internal/kube"
-	"ctxly/internal/session"
+	"anchor/internal/audit"
+	"anchor/internal/awsx"
+	"anchor/internal/config"
+	"anchor/internal/guard"
+	"anchor/internal/hooks"
+	"anchor/internal/kube"
+	"anchor/internal/session"
 )
 
 type Result struct {
@@ -125,8 +125,8 @@ func SessionEnviron(s *session.State, projectEnv map[string]string) []string {
 		"AWS_DEFAULT_REGION": s.AWSRegion,
 		"KUBECONFIG":         s.Kubeconfig,
 		"KUBE_NAMESPACE":     s.Namespace,
-		"CTXLY_PROJECT":      s.Project,
-		"CTXLY_TIER":         s.Tier,
+		"ANCHOR_PROJECT":      s.Project,
+		"ANCHOR_TIER":         s.Tier,
 	}
 	for k, v := range projectEnv {
 		set[k] = v

@@ -1,8 +1,8 @@
-# ctxly requirements
+# anchor requirements
 
 Session-first CLI for DevOps engineers juggling multiple AWS accounts and EKS clusters.
 
-## Implemented (v0.3)
+## Implemented (v1.0.0)
 
 ### Session & projects
 | Feature | Command |
@@ -38,22 +38,26 @@ Session-first CLI for DevOps engineers juggling multiple AWS accounts and EKS cl
 | Read-only project | `readonly: true` in project yaml |
 | Block dangerous deletes | `block_dangerous` option |
 | Context announce | `announce_context` on mutating ops |
-| Audit log | `~/.config/ctxly/audit.log` |
+| Audit log | `~/.config/anchor/audit.log` |
 | Plugin hooks | `hooks.pre_use/post_use/pre_apply` |
 
 ### Tooling
 | Feature | Command |
 |---------|---------|
 | Status / JSON | `status`, `status --json`, `share --json` |
+| SSO expiry hints | `status`, `doctor` |
+| Sync all projects | `sync` — refresh kubeconfigs + verify AWS |
+| Prompt segment | `prompt --format segment`, `prompt --format starship` |
+| Config migration | `~/.config/ctxly` → `~/.config/anchor` on first run |
 | Doctor | `doctor` |
 | Lint | `lint` |
 | Prune orphans | `prune`, `prune --dry-run` |
 | Validate | `validate` |
 | Share for Slack | `share` |
 | Project links | `links`, `links grafana --open` |
-| fzf pickers | `CTXLY_NO_FZF=1` to disable |
+| fzf pickers | `ANCHOR_NO_FZF=1` to disable |
 | Completions | `completion zsh/bash/fish` |
-| Homebrew | `packaging/homebrew/ctxly.rb` |
+| Homebrew | `packaging/homebrew/anchor.rb` |
 
 ## Out of scope
 

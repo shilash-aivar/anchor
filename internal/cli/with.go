@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"ctxly/internal/use"
+	"anchor/internal/use"
 
 	"github.com/spf13/cobra"
 )
@@ -13,12 +13,12 @@ var withCmd = &cobra.Command{
 	Use:   "with <project> [flags] -- <command> [args...]",
 	Short: "Run a command in a project without changing the active session",
 	Long: `Run a single command with another project's AWS profile and kubeconfig.
-Your saved session (ctxly project use) is not modified.
+Your saved session (anchor project use) is not modified.
 
-  ctxly with client-a -- kubectl get pods
-  ctxly with client-a -n app -- stern api --since 1h`,
-	Example: `  ctxly with staging -- kubectl get deploy
-  ctxly with client-a -y -- helm list`,
+  anchor with client-a -- kubectl get pods
+  anchor with client-a -n app -- stern api --since 1h`,
+	Example: `  anchor with staging -- kubectl get deploy
+  anchor with client-a -y -- helm list`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := runWith(cmd, args); err != nil {
 			exitErr(err)
@@ -35,7 +35,7 @@ func runWith(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if sep < 1 {
-		return fmt.Errorf("usage: ctxly with <project> [-n ns] [-y] -- <command> [args...]")
+		return fmt.Errorf("usage: anchor with <project> [-n ns] [-y] -- <command> [args...]")
 	}
 	if sep >= len(args)-1 {
 		return fmt.Errorf("missing command after --")
@@ -83,7 +83,7 @@ func runRecent(cmd *cobra.Command, args []string) error {
 		for i, e := range entries {
 			fmt.Printf("  %d) %s / %s  (%s)\n", i+1, e.Project, e.Namespace, e.UsedAt.Format("2006-01-02 15:04"))
 		}
-		fmt.Println("\nSwitch: ctxly recent --pick")
+		fmt.Println("\nSwitch: anchor recent --pick")
 		return nil
 	}
 
@@ -108,7 +108,7 @@ func runRecent(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	use.PrintSuccess(r)
-	fmt.Println("\nShell hook: eval \"$(ctxly env --shell zsh)\"")
+	fmt.Println("\nShell hook: eval \"$(anchor env --shell zsh)\"")
 	return nil
 }
 

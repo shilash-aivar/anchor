@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"ctxly/internal/config"
-	"ctxly/internal/kubecfg"
-	"ctxly/internal/picker"
-	"ctxly/internal/repo"
-	"ctxly/internal/use"
+	"anchor/internal/config"
+	"anchor/internal/kubecfg"
+	"anchor/internal/picker"
+	"anchor/internal/repo"
+	"anchor/internal/use"
 
 	"github.com/spf13/cobra"
 )
@@ -41,7 +41,7 @@ func runUse(cmd *cobra.Command, args []string) {
 				return
 			}
 			if len(names) == 0 {
-				exitErr(fmt.Errorf("no projects — run `ctxly project add`"))
+				exitErr(fmt.Errorf("no projects — run `anchor project add`"))
 				return
 			}
 			name, err = picker.Choose("Select project:", names)
@@ -62,7 +62,7 @@ func runUse(cmd *cobra.Command, args []string) {
 		return
 	}
 	use.PrintSuccess(r)
-	fmt.Println("\nShell hook: eval \"$(ctxly env --shell zsh)\"")
+	fmt.Println("\nShell hook: eval \"$(anchor env --shell zsh)\"")
 }
 
 func runLint(cmd *cobra.Command, args []string) {
@@ -163,7 +163,7 @@ func runShare(cmd *cobra.Command, args []string) {
 		fmt.Println(string(enc))
 		return
 	}
-	fmt.Println("── ctxly session ──")
+	fmt.Println("── anchor session ──")
 	for k, v := range block {
 		fmt.Printf("  %-12s %s\n", k+":", v)
 	}

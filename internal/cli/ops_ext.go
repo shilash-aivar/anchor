@@ -7,13 +7,13 @@ import (
 	"runtime"
 	"strings"
 
-	"ctxly/internal/audit"
-	"ctxly/internal/config"
-	"ctxly/internal/guard"
-	"ctxly/internal/hooks"
-	"ctxly/internal/kube"
-	"ctxly/internal/picker"
-	"ctxly/internal/use"
+	"anchor/internal/audit"
+	"anchor/internal/config"
+	"anchor/internal/guard"
+	"anchor/internal/hooks"
+	"anchor/internal/kube"
+	"anchor/internal/picker"
+	"anchor/internal/use"
 
 	"github.com/spf13/cobra"
 )
@@ -146,7 +146,7 @@ var debugCmd = &cobra.Command{
 			return
 		}
 		if len(args) == 0 {
-			exitErr(fmt.Errorf("usage: ctxly debug <pod> [-- args...]"))
+			exitErr(fmt.Errorf("usage: anchor debug <pod> [-- args...]"))
 			return
 		}
 		pod := args[0]
@@ -168,7 +168,7 @@ var helmCmd = &cobra.Command{
 			return
 		}
 		if len(args) == 0 {
-			exitErr(fmt.Errorf("usage: ctxly helm <helm args...>"))
+			exitErr(fmt.Errorf("usage: anchor helm <helm args...>"))
 			return
 		}
 		cfg, _ := config.LoadConfig()
@@ -284,7 +284,7 @@ func runLinks(cmd *cobra.Command, args []string) {
 		for k, v := range p.Links {
 			fmt.Printf("  %-12s %s\n", k, v)
 		}
-		fmt.Printf("\nOpen: ctxly links <name> --open   (project: %s)\n", s.Project)
+		fmt.Printf("\nOpen: anchor links <name> --open   (project: %s)\n", s.Project)
 		return
 	}
 	url, ok := p.Links[args[0]]

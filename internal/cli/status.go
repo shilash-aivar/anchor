@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"ctxly/internal/awsx"
-	"ctxly/internal/session"
+	"anchor/internal/awsx"
 
 	"github.com/spf13/cobra"
 )
@@ -29,19 +28,20 @@ func runStatus(jsonOut bool) error {
 	}
 
 	type statusJSON struct {
-		Project     string `json:"project"`
-		Tier        string `json:"tier"`
-		Namespace   string `json:"namespace"`
-		Context     string `json:"context"`
-		Cluster     string `json:"cluster"`
-		AWSProfile  string `json:"aws_profile"`
-		AWSRegion   string `json:"aws_region"`
-		AccountID   string `json:"account_id,omitempty"`
-		Kubeconfig  string `json:"kubeconfig"`
-		ReadOnly    bool   `json:"readonly"`
-		UpdatedAt   string `json:"updated_at"`
-		AWSValid    bool   `json:"aws_valid"`
-		AWSARN      string `json:"aws_arn,omitempty"`
+		Project    string `json:"project"`
+		Tier       string `json:"tier"`
+		Namespace  string `json:"namespace"`
+		Context    string `json:"context"`
+		Cluster    string `json:"cluster"`
+		AWSProfile string `json:"aws_profile"`
+		AWSRegion  string `json:"aws_region"`
+		AccountID  string `json:"account_id,omitempty"`
+		Kubeconfig string `json:"kubeconfig"`
+		ReadOnly   bool   `json:"readonly"`
+		UpdatedAt  string `json:"updated_at"`
+		AWSValid   bool   `json:"aws_valid"`
+		AWSARN     string `json:"aws_arn,omitempty"`
+		AWSExpires string `json:"aws_expires,omitempty"`
 	}
 
 	st := statusJSON{
@@ -57,14 +57,17 @@ func runStatus(jsonOut bool) error {
 		ReadOnly:   p.ReadOnly,
 		UpdatedAt:  s.UpdatedAt.Format(timeRFC3339),
 	}
-	if awsx.AWSAvailable() {
+
+	cred := awsx.CredentialStatusForProfile(s.AWSProfile)
+	st.AWSValid = cred.Valid
+	st.AWSExpires = cred.ExpiresIn
+	if cred.Valid {
 		if id, err := awsx.GetCallerIdentity(s.AWSProfile); err == nil {
-			st.AWSValid = true
 			st.AWSARN = id.ARN
 		}
 	}
 
-		if jsonOut {
+	if jsonOut {
 		enc, _ := json.MarshalIndent(st, "", "  ")
 		fmt.Println(string(enc))
 		return nil
@@ -82,10 +85,21 @@ func runStatus(jsonOut bool) error {
 	fmt.Printf("K8s:        context=%s namespace=%s\n", s.KubeContext, s.Namespace)
 	fmt.Printf("Kubeconfig: %s\n", s.Kubeconfig)
 	fmt.Printf("Updated:    %s\n", s.UpdatedAt.Format("2006-01-02 15:04:05 UTC"))
-	if st.AWSValid {
-		fmt.Printf("AWS creds:  ✓ %s\n", st.AWSARN)
+	if cred.Valid {
+		line := cred.ExpiresIn
+		if line == "" {
+			line = "ok"
+		}
+		fmt.Printf("AWS creds:  ✓ %s", st.AWSARN)
+		if cred.ExpiresIn != "" {
+			fmt.Printf(" (%s)", cred.ExpiresIn)
+		}
+		fmt.Println()
+		if cred.Hint != "" {
+			fmt.Fprintf(os.Stderr, "            ⚠ %s\n", cred.Hint)
+		}
 	} else {
-		fmt.Fprintf(os.Stderr, "AWS creds:  ✗ expired or invalid — run `ctxly login`\n")
+		fmt.Fprintf(os.Stderr, "AWS creds:  ✗ %s\n", cred.Hint)
 	}
 	return nil
 }
@@ -133,10 +147,17 @@ func runDoctor() error {
 		return nil
 	}
 
-	if id, err := awsx.GetCallerIdentity(s.AWSProfile); err != nil {
-		fmt.Printf("aws-auth:   ✗ run `ctxly login %s`\n", s.AWSProfile)
+	cred := awsx.CredentialStatusForProfile(s.AWSProfile)
+	if !cred.Valid {
+		fmt.Printf("aws-auth:   ✗ %s\n", cred.Hint)
+	} else if id, err := awsx.GetCallerIdentity(s.AWSProfile); err != nil {
+		fmt.Printf("aws-auth:   ✗ run `anchor login %s`\n", s.AWSProfile)
 	} else {
-		fmt.Printf("aws-auth:   ✓ account %s\n", id.Account)
+		fmt.Printf("aws-auth:   ✓ account %s", id.Account)
+		if cred.ExpiresIn != "" {
+			fmt.Printf(" (%s)", cred.ExpiresIn)
+		}
+		fmt.Println()
 		if s.AccountID != "" && id.Account != s.AccountID {
 			fmt.Printf("            ⚠ profile account %s ≠ project account %s\n", id.Account, s.AccountID)
 		}
@@ -150,12 +171,11 @@ func runDoctor() error {
 
 	issues, _ := lintIssues()
 	if len(issues) > 0 {
-		fmt.Printf("lint:       ⚠ %d issue(s) — run `ctxly lint`\n", len(issues))
+		fmt.Printf("lint:       ⚠ %d issue(s) — run `anchor lint`\n", len(issues))
 	} else {
 		fmt.Printf("lint:       ✓\n")
 	}
 
-	_ = session.Load
 	return nil
 }
 

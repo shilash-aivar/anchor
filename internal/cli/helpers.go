@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"ctxly/internal/awsx"
-	"ctxly/internal/kube"
-	"ctxly/internal/session"
+	"anchor/internal/awsx"
+	"anchor/internal/kube"
+	"anchor/internal/session"
 )
 
 func kubectlOK() bool {

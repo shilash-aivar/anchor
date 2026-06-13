@@ -11,7 +11,7 @@ import (
 )
 
 func FzfEnabled() bool {
-	if os.Getenv("CTXLY_NO_FZF") != "" {
+	if os.Getenv("ANCHOR_NO_FZF") != "" {
 		return false
 	}
 	_, err := exec.LookPath("fzf")

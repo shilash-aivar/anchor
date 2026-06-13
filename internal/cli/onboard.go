@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"ctxly/internal/config"
+	"anchor/internal/config"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -40,12 +40,12 @@ var onboardCmd = &cobra.Command{
 		}
 
 		fmt.Println("\nNext steps:")
-		fmt.Println("  1. ctxly project add")
-		fmt.Println("  2. ctxly login <aws-profile>")
-		fmt.Println("  3. ctxly project use        # fzf picker when name omitted")
+		fmt.Println("  1. anchor project add")
+		fmt.Println("  2. anchor login <aws-profile>")
+		fmt.Println("  3. anchor project use        # fzf picker when name omitted")
 		fmt.Println("  4. Shell hook — see README (auto-export after project use)")
 		fmt.Println("\nCompletions:")
-		fmt.Println("  ctxly completion zsh > $(brew --prefix)/share/zsh/site-functions/_ctxly")
+		fmt.Println("  anchor completion zsh > $(brew --prefix)/share/zsh/site-functions/_anchor")
 		fmt.Println("  make install-completions")
 	},
 }
@@ -96,6 +96,6 @@ func toolOK(name string) bool {
 }
 
 func init() {
-	initCmd.Flags().String("project", "", "Project name from ~/.config/ctxly/projects/")
+	initCmd.Flags().String("project", "", "Project name from ~/.config/anchor/projects/")
 	initCmd.Flags().String("namespace", "", "Default namespace for this repo")
 }

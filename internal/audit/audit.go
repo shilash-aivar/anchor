@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"ctxly/internal/config"
+	"anchor/internal/config"
 )
 
 func Log(action, detail string) error {

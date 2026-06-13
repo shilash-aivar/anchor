@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"ctxly/internal/config"
+	"anchor/internal/config"
 )
 
 type State struct {
@@ -129,8 +129,8 @@ func EnvExports(s *State, projectEnv map[string]string) []string {
 		fmt.Sprintf("export AWS_DEFAULT_REGION=%q", s.AWSRegion),
 		fmt.Sprintf("export KUBECONFIG=%q", s.Kubeconfig),
 		fmt.Sprintf("export KUBE_NAMESPACE=%q", s.Namespace),
-		fmt.Sprintf("export CTXLY_PROJECT=%q", s.Project),
-		fmt.Sprintf("export CTXLY_TIER=%q", s.Tier),
+		fmt.Sprintf("export ANCHOR_PROJECT=%q", s.Project),
+		fmt.Sprintf("export ANCHOR_TIER=%q", s.Tier),
 	}
 	for k, v := range projectEnv {
 		exports = append(exports, fmt.Sprintf("export %s=%q", k, v))

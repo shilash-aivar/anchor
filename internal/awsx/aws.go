@@ -33,7 +33,7 @@ func GetCallerIdentity(profile string) (*Identity, error) {
 	}
 	out, err := exec.Command("aws", args...).Output()
 	if err != nil {
-		return nil, fmt.Errorf("aws credentials invalid or expired (profile %q): run `ctxly login`", profile)
+		return nil, fmt.Errorf("aws credentials invalid or expired (profile %q): run `anchor login`", profile)
 	}
 	var id Identity
 	if err := json.Unmarshal(out, &id); err != nil {

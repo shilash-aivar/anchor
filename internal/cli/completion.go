@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"ctxly/internal/config"
-	"ctxly/internal/picker"
-	"ctxly/internal/session"
+	"anchor/internal/config"
+	"anchor/internal/picker"
+	"anchor/internal/session"
 
 	"github.com/spf13/cobra"
 )

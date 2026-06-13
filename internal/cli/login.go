@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"ctxly/internal/awsx"
-	"ctxly/internal/config"
+	"anchor/internal/awsx"
+	"anchor/internal/config"
 
 	"github.com/spf13/cobra"
 )
