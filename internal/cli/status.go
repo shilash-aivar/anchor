@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"anchor/internal/awsx"
+	"anchor/internal/deps"
 
 	"github.com/spf13/cobra"
 )
@@ -134,13 +135,8 @@ func runDoctor() error {
 
 	check("aws", awsx.AWSAvailable(), "install AWS CLI v2")
 	check("kubectl", kubectlOK(), "install kubectl")
-	check("fzf", toolOK("fzf"), "optional: brew install fzf")
-	for _, tool := range []struct{ name, pkg string }{
-		{"stern", "brew install stern"},
-		{"k9s", "brew install k9s"},
-		{"helm", "brew install helm"},
-	} {
-		check(tool.name, toolOK(tool.name), tool.pkg)
+	for _, s := range deps.CheckAll()[2:] {
+		check(s.Tool.Binary, s.OK, s.Install)
 	}
 
 	if s == nil {

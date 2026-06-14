@@ -1,4 +1,4 @@
-.PHONY: build install test tidy install-completions install-all uninstall
+.PHONY: build install test tidy install-completions install-deps install-all uninstall
 
 PREFIX ?= $(HOME)/.local
 VERSION ?= 1.0.0
@@ -12,10 +12,18 @@ install: build
 	install -m 755 bin/anchor $(BINDIR)/anchor
 	@echo "Installed $(BINDIR)/anchor"
 
-install-all: install install-completions
+install-deps:
+	@chmod +x scripts/install-deps.sh
+	@./scripts/install-deps.sh
+
+install-all: install install-deps install-completions
+	@echo ""
+	@echo "✓ anchor + dependencies + completions installed"
 	@echo ""
 	@echo "Add to ~/.zshrc:"
 	@echo '  export PATH="$(HOME)/.local/bin:$$PATH"'
+	@echo ""
+	@echo "Or run: ./scripts/shell-setup.sh"
 
 install-completions: build
 	@mkdir -p $(PREFIX)/share/zsh/site-functions $(PREFIX)/share/bash-completion/completions

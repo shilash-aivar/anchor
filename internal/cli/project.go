@@ -77,7 +77,7 @@ var projectUseCmd = &cobra.Command{
 			}
 		}
 
-		r, err := use.Activate(name, ns, skip)
+		r, err := use.Activate(name, ns, useOptsFrom(cmd, skip))
 		if err != nil {
 			exitErr(err)
 		}
@@ -233,6 +233,7 @@ var nsCmd = &cobra.Command{
 func init() {
 	projectUseCmd.Flags().StringP("namespace", "n", "", "Namespace to activate")
 	projectUseCmd.Flags().BoolP("yes", "y", false, "Skip production confirmation")
+	registerAutoLoginFlags(projectUseCmd)
 
 	projectCmd.AddCommand(projectListCmd, projectUseCmd, projectAddCmd, projectNotesCmd, projectImportCmd)
 	rootCmd.AddCommand(nsCmd)

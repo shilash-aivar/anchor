@@ -14,6 +14,7 @@ var dangerousPatterns = []string{
 	"delete --all",
 	"delete -A",
 	"delete namespace",
+	"delete ns ",
 }
 
 func CheckMutating(s *session.State, p *config.Project, cfg *config.Config, verb string, args []string) error {
@@ -25,12 +26,17 @@ func CheckMutating(s *session.State, p *config.Project, cfg *config.Config, verb
 		}
 	}
 
-	if cfg != nil && cfg.Options.BlockDangerous && p != nil && p.IsProduction() {
+	protected := IsProtected(p, cfg, s)
+	if cfg != nil && cfg.Options.BlockDangerous && protected {
 		for _, d := range dangerousPatterns {
 			if strings.Contains(line, d) {
-				return fmt.Errorf("blocked dangerous command on production tier: %s", d)
+				return fmt.Errorf("blocked dangerous command on protected context: %s", d)
 			}
 		}
+	}
+
+	if err := ConfirmMutating(s, p, cfg, verb, args); err != nil {
+		return err
 	}
 
 	if cfg != nil && cfg.Options.AnnounceContext {
@@ -42,7 +48,7 @@ func CheckMutating(s *session.State, p *config.Project, cfg *config.Config, verb
 
 func isMutatingVerb(verb string, args []string) bool {
 	switch verb {
-	case "apply", "delete", "patch", "replace", "edit", "scale", "rollout", "create":
+	case "apply", "delete", "patch", "replace", "edit", "scale", "rollout", "create", "drain", "cordon", "taint":
 		return true
 	case "k", "kubectl":
 		if len(args) == 0 {
@@ -65,7 +71,10 @@ func ConfirmApply(p *config.Project, cfg *config.Config) error {
 	if p == nil || cfg == nil {
 		return nil
 	}
-	if !p.IsProduction() || !cfg.Options.ConfirmProduction {
+	if !p.IsProduction() && cfg.Options.ProtectContextRegex == "" {
+		return nil
+	}
+	if !p.ShouldConfirm(cfg.Options.ConfirmProduction) && !p.IsProduction() {
 		return nil
 	}
 	return ConfirmProjectSwitch(p, cfg.Options.ConfirmProduction)

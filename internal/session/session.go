@@ -77,7 +77,20 @@ func Save(s *State) error {
 	if err != nil {
 		return err
 	}
-	line := fmt.Sprintf("%s|%s|%s", s.Project, s.KubeContext, s.Namespace)
+	cluster := s.KubeContext
+	if p, err := config.LoadProject(s.Project); err == nil && p.Cluster != "" {
+		cluster = p.Cluster
+	}
+	line := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
+		s.Project,
+		s.KubeContext,
+		s.Namespace,
+		s.AccountID,
+		cluster,
+		s.Tier,
+		s.AWSProfile,
+		s.AWSRegion,
+	)
 	return os.WriteFile(marker, []byte(line), 0o644)
 }
 
@@ -131,6 +144,14 @@ func EnvExports(s *State, projectEnv map[string]string) []string {
 		fmt.Sprintf("export KUBE_NAMESPACE=%q", s.Namespace),
 		fmt.Sprintf("export ANCHOR_PROJECT=%q", s.Project),
 		fmt.Sprintf("export ANCHOR_TIER=%q", s.Tier),
+	}
+	if s.AccountID != "" {
+		exports = append(exports, fmt.Sprintf("export ANCHOR_ACCOUNT_ID=%q", s.AccountID))
+	}
+	if p, err := config.LoadProject(s.Project); err == nil {
+		if p.Cluster != "" {
+			exports = append(exports, fmt.Sprintf("export ANCHOR_CLUSTER=%q", p.Cluster))
+		}
 	}
 	for k, v := range projectEnv {
 		exports = append(exports, fmt.Sprintf("export %s=%q", k, v))

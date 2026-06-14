@@ -27,7 +27,7 @@ var syncCmd = &cobra.Command{
 		ok, fail := 0, 0
 		for _, p := range projects {
 			fmt.Printf("\n── %s ──\n", p.Name)
-			r, err := use.Prepare(p.Name, p.DefaultNamespace, skip)
+			r, err := use.Prepare(p.Name, p.DefaultNamespace, useOptsFrom(cmd, skip))
 			if err != nil {
 				fmt.Printf("✗ %v\n", err)
 				fail++
@@ -44,7 +44,7 @@ var syncCmd = &cobra.Command{
 			} else {
 				fmt.Printf("  AWS: ✓\n")
 			}
-			if err := clusterReachable(r.State); err != nil {
+			if err := clusterReachableForProject(r.State, r.Project); err != nil {
 				fmt.Printf("✗ cluster: %v\n", err)
 				fail++
 				continue
@@ -58,4 +58,5 @@ var syncCmd = &cobra.Command{
 
 func init() {
 	syncCmd.Flags().BoolP("yes", "y", false, "Skip production confirmation")
+	registerAutoLoginFlags(syncCmd)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 
 	"anchor/internal/audit"
@@ -234,12 +233,6 @@ var shareCmd = &cobra.Command{
 	Run:   runShare,
 }
 
-var linksCmd = &cobra.Command{
-	Use:   "links [name]",
-	Short: "List or open project links (grafana, runbook, etc.)",
-	Run:   runLinks,
-}
-
 var shellCmd = &cobra.Command{
 	Use:   "shell [project]",
 	Short: "Spawn a subshell with project environment (does not change saved session unless project given with activate flag)",
@@ -270,50 +263,19 @@ var useCmd = &cobra.Command{
 	Run:   runUse,
 }
 
-func runLinks(cmd *cobra.Command, args []string) {
-	s, p, err := activeSession()
-	if err != nil {
-		exitErr(err)
-		return
-	}
-	if len(p.Links) == 0 {
-		fmt.Println("(no links in project config)")
-		return
-	}
-	if len(args) == 0 {
-		for k, v := range p.Links {
-			fmt.Printf("  %-12s %s\n", k, v)
-		}
-		fmt.Printf("\nOpen: anchor links <name> --open   (project: %s)\n", s.Project)
-		return
-	}
-	url, ok := p.Links[args[0]]
-	if !ok {
-		exitErr(fmt.Errorf("unknown link %q", args[0]))
-		return
-	}
-	open, _ := cmd.Flags().GetBool("open")
-	if open {
-		if err := openBrowser(url); err != nil {
-			exitErr(err)
-			return
-		}
-		return
-	}
-	fmt.Println(url)
-}
-
 func runShell(cmd *cobra.Command, args []string) {
 	activate, _ := cmd.Flags().GetBool("activate")
+	refresh, _ := cmd.Flags().GetBool("refresh")
 	skip, _ := cmd.Flags().GetBool("yes")
+	opts := useOptsFrom(cmd, skip)
 
 	var r *use.Result
 	var err error
 	if len(args) == 1 {
 		if activate {
-			r, err = use.Activate(args[0], "", skip)
+			r, err = use.Activate(args[0], "", opts)
 		} else {
-			r, err = use.Prepare(args[0], "", skip)
+			r, err = use.Prepare(args[0], "", opts)
 		}
 	} else {
 		s, p, err2 := activeSession()
@@ -321,7 +283,17 @@ func runShell(cmd *cobra.Command, args []string) {
 			exitErr(err2)
 			return
 		}
-		r = &use.Result{State: s, Project: p}
+		if refresh {
+			r, err = use.Prepare(s.Project, s.Namespace, opts)
+		} else {
+			r = &use.Result{State: s, Project: p}
+			if p != nil && p.VPNRequired {
+				if err := kube.ClusterReachable(s.Kubeconfig, s.KubeContext); err != nil {
+					exitErr(fmt.Errorf("cluster unreachable (vpn_required: true) — connect VPN and retry: %w", err))
+					return
+				}
+			}
+		}
 	}
 	if err != nil {
 		exitErr(err)
@@ -342,26 +314,15 @@ func runShell(cmd *cobra.Command, args []string) {
 	}
 }
 
-func openBrowser(url string) error {
-	switch runtime.GOOS {
-	case "darwin":
-		return exec.Command("open", url).Run()
-	case "linux":
-		return exec.Command("xdg-open", url).Run()
-	default:
-		fmt.Println(url)
-		return nil
-	}
-}
-
 func init() {
 	eventsCmd.Flags().Bool("warnings", false, "Show Warning/Error events only")
 	cpCmd.Flags().String("pod", "", "Pod name")
 	cpCmd.Flags().StringP("container", "c", "", "Container name")
 	shareCmd.Flags().Bool("json", false, "JSON output")
-	linksCmd.Flags().Bool("open", false, "Open URL in browser")
 	shellCmd.Flags().Bool("activate", false, "Also save as active session")
+	shellCmd.Flags().Bool("refresh", false, "Re-sync AWS/kubeconfig for active session before subshell")
 	shellCmd.Flags().BoolP("yes", "y", false, "Skip production confirmation")
+	registerAutoLoginFlags(shellCmd)
 	pruneCmd.Flags().Bool("dry-run", false, "Show what would be removed")
 	initUseCmd()
 }

@@ -47,7 +47,7 @@ func runWith(cmd *cobra.Command, args []string) error {
 	command := args[sep+1]
 	cmdArgs := args[sep+2:]
 
-	r, err := use.Prepare(project, ns, skip)
+	r, err := use.Prepare(project, ns, useOptsFrom(cmd, skip))
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func runRecent(cmd *cobra.Command, args []string) error {
 		}
 	}
 	e := entries[idx]
-	r, err := use.Activate(e.Project, e.Namespace, false)
+	r, err := use.Activate(e.Project, e.Namespace, useOptsFrom(cmd, false))
 	if err != nil {
 		return err
 	}
@@ -115,5 +115,7 @@ func runRecent(cmd *cobra.Command, args []string) error {
 func init() {
 	withCmd.Flags().StringP("namespace", "n", "", "Namespace override")
 	withCmd.Flags().BoolP("yes", "y", false, "Skip production confirmation")
+	registerAutoLoginFlags(withCmd)
 	recentCmd.Flags().Bool("pick", false, "Interactively switch to a recent project")
+	registerAutoLoginFlags(recentCmd)
 }

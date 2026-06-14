@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"anchor/internal/audit"
 	"anchor/internal/awsx"
@@ -19,7 +20,17 @@ type Result struct {
 	Project *config.Project
 }
 
-func Prepare(name, namespace string, skipConfirm bool) (*Result, error) {
+type Options struct {
+	SkipConfirm bool
+	AutoLogin   bool
+	NoLogin     bool
+}
+
+func DefaultOptions(skipConfirm bool) Options {
+	return Options{SkipConfirm: skipConfirm}
+}
+
+func Prepare(name, namespace string, opt Options) (*Result, error) {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return nil, err
@@ -28,7 +39,7 @@ func Prepare(name, namespace string, skipConfirm bool) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !skipConfirm {
+	if !opt.SkipConfirm {
 		if err := guard.ConfirmProjectSwitch(p, cfg.Options.ConfirmProduction); err != nil {
 			return nil, err
 		}
@@ -42,8 +53,16 @@ func Prepare(name, namespace string, skipConfirm bool) (*Result, error) {
 	if !awsx.AWSAvailable() {
 		return nil, fmt.Errorf("aws CLI not found in PATH")
 	}
-	if _, err := awsx.GetCallerIdentity(p.AWSProfile); err != nil {
+
+	autoLogin := opt.AutoLogin || (cfg.Options.AutoLoginOnUse && !opt.NoLogin)
+	if err := ensureAWSAuth(p.AWSProfile, autoLogin, opt.NoLogin); err != nil {
 		return nil, err
+	}
+
+	if id, err := awsx.GetCallerIdentity(p.AWSProfile); err == nil {
+		if p.AccountID == "" {
+			p.AccountID = id.Account
+		}
 	}
 
 	alias := p.EffectiveContextAlias()
@@ -69,14 +88,39 @@ func Prepare(name, namespace string, skipConfirm bool) (*Result, error) {
 		AccountID:   p.AccountID,
 		KubeContext: alias,
 		Namespace:   ns,
-		Tier:        p.Tier,
+		Tier:        config.NormalizeTier(p.Tier),
 		Kubeconfig:  kubePath,
 	}
+
+	if p.VPNRequired {
+		if err := kube.ClusterReachable(s.Kubeconfig, s.KubeContext); err != nil {
+			return nil, fmt.Errorf("cluster unreachable (vpn_required: true) — connect VPN and retry: %w", err)
+		}
+	}
+
 	return &Result{State: s, Project: p}, nil
 }
 
-func Activate(name, namespace string, skipConfirm bool) (*Result, error) {
-	r, err := Prepare(name, namespace, skipConfirm)
+func ensureAWSAuth(profile string, autoLogin, noLogin bool) error {
+	if _, err := awsx.GetCallerIdentity(profile); err == nil {
+		if !autoLogin || !awsx.NeedsLogin(profile, 30*time.Minute) {
+			return nil
+		}
+	} else if noLogin || !autoLogin {
+		return fmt.Errorf("aws credentials invalid or expired (profile %q): run `anchor login %s` or `anchor use --auto-login`", profile, profile)
+	}
+	fmt.Fprintln(os.Stderr, "→ AWS credentials expired or expiring, running SSO login…")
+	if err := awsx.SSOLogin(profile); err != nil {
+		return err
+	}
+	if _, err := awsx.GetCallerIdentity(profile); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Activate(name, namespace string, opt Options) (*Result, error) {
+	r, err := Prepare(name, namespace, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +136,15 @@ func Activate(name, namespace string, skipConfirm bool) (*Result, error) {
 	return r, nil
 }
 
+// Backward-compatible wrappers
+func ActivateSimple(name, namespace string, skipConfirm bool) (*Result, error) {
+	return Activate(name, namespace, DefaultOptions(skipConfirm))
+}
+
+func PrepareSimple(name, namespace string, skipConfirm bool) (*Result, error) {
+	return Prepare(name, namespace, DefaultOptions(skipConfirm))
+}
+
 func PrintSuccess(r *Result) {
 	fmt.Printf("✓ Project:  %s\n", r.State.Project)
 	fmt.Printf("  AWS:      profile=%s region=%s", r.State.AWSProfile, r.State.AWSRegion)
@@ -104,6 +157,9 @@ func PrintSuccess(r *Result) {
 	fmt.Printf("  Tier:     %s\n", r.State.Tier)
 	if r.Project.ReadOnly {
 		fmt.Printf("  Mode:     read-only\n")
+	}
+	if r.Project.VPNRequired {
+		fmt.Printf("  VPN:      required\n")
 	}
 	fmt.Printf("  Kubeconfig: %s\n", r.State.Kubeconfig)
 }
@@ -125,11 +181,28 @@ func SessionEnviron(s *session.State, projectEnv map[string]string) []string {
 		"AWS_DEFAULT_REGION": s.AWSRegion,
 		"KUBECONFIG":         s.Kubeconfig,
 		"KUBE_NAMESPACE":     s.Namespace,
-		"ANCHOR_PROJECT":      s.Project,
-		"ANCHOR_TIER":         s.Tier,
+		"ANCHOR_PROJECT":     s.Project,
+		"ANCHOR_TIER":        s.Tier,
+		"ANCHOR_SUBSHELL":    "1",
+	}
+	if s.AccountID != "" {
+		set["ANCHOR_ACCOUNT_ID"] = s.AccountID
+	}
+	if p, err := config.LoadProject(s.Project); err == nil && p.Cluster != "" {
+		set["ANCHOR_CLUSTER"] = p.Cluster
 	}
 	for k, v := range projectEnv {
 		set[k] = v
+	}
+
+	strip := map[string]bool{
+		"AWS_ACCESS_KEY_ID":     true,
+		"AWS_SECRET_ACCESS_KEY": true,
+		"AWS_SESSION_TOKEN":     true,
+		"AWS_DEFAULT_PROFILE":   true,
+	}
+	for k := range set {
+		strip[k] = true
 	}
 
 	out := make([]string, 0, len(base)+len(set))
@@ -138,7 +211,7 @@ func SessionEnviron(s *session.State, projectEnv map[string]string) []string {
 		if i := indexEnvKey(kv); i >= 0 {
 			key = kv[:i]
 		}
-		if _, ok := set[key]; ok {
+		if strip[key] {
 			continue
 		}
 		out = append(out, kv)

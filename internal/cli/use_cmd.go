@@ -16,7 +16,6 @@ import (
 
 func runUse(cmd *cobra.Command, args []string) {
 	ns, _ := cmd.Flags().GetString("namespace")
-	skip, _ := cmd.Flags().GetBool("yes")
 	fromRepo, _ := cmd.Flags().GetBool("from-repo")
 
 	name := ""
@@ -44,6 +43,7 @@ func runUse(cmd *cobra.Command, args []string) {
 				exitErr(fmt.Errorf("no projects — run `anchor project add`"))
 				return
 			}
+			names = config.SortProjectsPinnedFirst(names)
 			name, err = picker.Choose("Select project:", names)
 			if err != nil {
 				exitErr(err)
@@ -56,7 +56,7 @@ func runUse(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	r, err := use.Activate(name, ns, skip)
+	r, err := use.Activate(name, ns, useOpts(cmd))
 	if err != nil {
 		exitErr(err)
 		return
@@ -169,8 +169,17 @@ func runShare(cmd *cobra.Command, args []string) {
 	}
 }
 
+func useOpts(cmd *cobra.Command) use.Options {
+	skip, _ := cmd.Flags().GetBool("yes")
+	autoLogin, _ := cmd.Flags().GetBool("auto-login")
+	noLogin, _ := cmd.Flags().GetBool("no-login")
+	return use.Options{SkipConfirm: skip, AutoLogin: autoLogin, NoLogin: noLogin}
+}
+
 func initUseCmd() {
 	useCmd.Flags().StringP("namespace", "n", "", "Namespace override")
 	useCmd.Flags().BoolP("yes", "y", false, "Skip production confirmation")
 	useCmd.Flags().Bool("from-repo", false, "Load project from .ctx.yaml in directory tree")
+	useCmd.Flags().Bool("auto-login", false, "Run SSO login if AWS credentials expired")
+	useCmd.Flags().Bool("no-login", false, "Fail instead of SSO login when credentials expired")
 }

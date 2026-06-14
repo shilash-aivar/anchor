@@ -24,6 +24,7 @@ Then run daily ops:
   anchor logs api
   anchor exec
   anchor ui
+  anchor dashboard
   anchor pf svc/api 8080:80`,
 	SilenceUsage: true,
 }
@@ -78,12 +79,23 @@ func init() {
 		debugCmd,
 		shareCmd,
 		linksCmd,
+		infoCmd,
 		shellCmd,
 		lintCmd,
 		pruneCmd,
 		validateCmd,
 		syncCmd,
 		promptCmd,
+		dashboardCmd,
+		whoamiCmd,
+		startCmd,
+		logoutCmd,
+		auditCmd,
+		pinCmd,
+		eksCmd,
+		withAllCmd,
 	)
+	initExtras()
+	initDiscoverLogin()
 	registerCompletions()
 }

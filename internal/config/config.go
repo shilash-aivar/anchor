@@ -34,11 +34,13 @@ type ShellConfig struct {
 }
 
 type OptionsConfig struct {
-	ConfirmProduction bool `yaml:"confirm_production,omitempty"`
-	AnnounceContext   bool `yaml:"announce_context,omitempty"`
-	AuditLog          bool `yaml:"audit_log,omitempty"`
-	BlockDangerous    bool `yaml:"block_dangerous,omitempty"`
-	DryRunProduction  bool `yaml:"dry_run_production,omitempty"`
+	ConfirmProduction  bool   `yaml:"confirm_production,omitempty"`
+	AnnounceContext    bool   `yaml:"announce_context,omitempty"`
+	AuditLog           bool   `yaml:"audit_log,omitempty"`
+	BlockDangerous     bool   `yaml:"block_dangerous,omitempty"`
+	DryRunProduction   bool   `yaml:"dry_run_production,omitempty"`
+	ProtectContextRegex string `yaml:"protect_context_regex,omitempty"`
+	AutoLoginOnUse     bool   `yaml:"auto_login_on_use,omitempty"`
 }
 
 type HooksConfig struct {
@@ -80,7 +82,7 @@ func (p Project) EffectiveConfirmText() string {
 }
 
 func (p Project) IsProduction() bool {
-	return p.Tier == "production"
+	return IsProductionTier(p.Tier)
 }
 
 func (p Project) ShouldConfirm(globalConfirmProduction bool) bool {

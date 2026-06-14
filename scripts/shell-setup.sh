@@ -11,7 +11,9 @@ export PATH="${PREFIX}/bin:\$PATH"
 fpath=(${PREFIX}/share/zsh/site-functions \$fpath)
 autoload -Uz compinit && compinit
 
-# Starship segment (optional): run \`anchor prompt --format starship\` for config snippet
+# Show AWS account + EKS cluster in prompt (like git branch):
+#   anchor prompt --format install >> ~/.zshrc
+# Or paste the block from: anchor prompt --format install
 
 anchor() {
   command ${PREFIX}/bin/anchor "\$@"
@@ -20,3 +22,7 @@ anchor() {
   fi
 }
 EOF
+
+echo ""
+echo "# Quick setup — append prompt context to ~/.zshrc:"
+echo "#   anchor prompt --format install >> ~/.zshrc"

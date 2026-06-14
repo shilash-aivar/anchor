@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>anchor dashboard</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --prod: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+    aside {
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.25rem 0;
+      flex-shrink: 0;
+    }
+    .logo {
+      padding: 0 1.25rem 1.5rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: var(--accent2); }
+    nav button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.65rem 1.25rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    nav button:hover { color: var(--text); background: var(--surface2); }
+    nav button.active { color: var(--text); background: var(--surface2); border-left: 3px solid var(--accent); }
+    main { flex: 1; padding: 1.5rem 2rem; overflow: auto; max-height: 100vh; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; font-weight: 600; }
+    h2 { font-size: 1rem; color: var(--muted); margin: 1.5rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge.prod { background: rgba(220,38,38,0.2); color: #fca5a5; }
+    .badge.ok { background: rgba(34,197,94,0.15); color: #86efac; }
+    .badge.bad { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .badge.neutral { background: var(--surface2); color: var(--muted); }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    button, .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    button.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    button.danger { background: var(--prod); }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .meta { color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
+    .meta strong { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; }
+    tr:hover td { background: var(--surface2); }
+    code {
+      font-family: "SF Mono", Menlo, monospace;
+      font-size: 0.8rem;
+      background: var(--bg);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--bg);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow: auto;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      border: 1px solid var(--border);
+    }
+    input, select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      display: none;
+      z-index: 100;
+    }
+    .toast.show { display: block; }
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: none; align-items: center; justify-content: center; z-index: 50;
+    }
+    .modal-bg.show { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: min(420px, 90vw);
+    }
+    .modal h3 { margin-bottom: 0.75rem; }
+    .link-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      margin: 0.25rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .link-chip:hover { border-color: var(--accent); }
+    .empty { color: var(--muted); padding: 2rem; text-align: center; }
+    .version { padding: 1rem 1.25rem; color: var(--muted); font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <aside>
+    <div class="logo">⚓ <span>anchor</span></div>
+    <nav id="nav">
+      <button data-panel="overview" class="active">Overview</button>
+      <button data-panel="projects">Projects</button>
+      <button data-panel="commands">Commands</button>
+      <button data-panel="ops">Kubernetes</button>
+      <button data-panel="maintenance">Maintenance</button>
+    </nav>
+    <div class="version" id="version"></div>
+  </aside>
+  <main>
+    <section id="overview" class="panel active">
+      <h1>Overview</h1>
+      <div class="toolbar">
+        <button onclick="refresh()">Refresh</button>
+        <button class="secondary" onclick="apiLogin(false)">SSO Login</button>
+        <button class="secondary" onclick="apiLogin(true)">Login All</button>
+        <button class="secondary" onclick="apiSync()">Sync All</button>
+      </div>
+      <div id="session-card" class="card"><div class="empty">Loading…</div></div>
+      <h2>Recent</h2>
+      <div id="recent-list" class="grid"></div>
+      <h2>Quick links</h2>
+      <div id="quick-links"></div>
+      <h2>Notes</h2>
+      <pre id="notes-block" class="meta">—</pre>
+    </section>
+
+    <section id="projects" class="panel">
+      <h1>Projects</h1>
+      <div id="projects-grid" class="grid"></div>
+    </section>
+
+    <section id="commands" class="panel">
+      <h1>All commands</h1>
+      <div class="toolbar">
+        <input type="search" id="cmd-filter" placeholder="Filter commands…" style="min-width:240px">
+        <select id="cmd-group"><option value="">All groups</option></select>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th><th>Example</th><th></th></tr></thead>
+          <tbody id="commands-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ops" class="panel">
+      <h1>Kubernetes ops</h1>
+      <p class="meta" style="margin-bottom:1rem">Interactive commands (logs, exec, k9s) run in your terminal. Use the builder below or copy commands.</p>
+      <div class="toolbar">
+        <input id="find-q" placeholder="Search resources…" style="min-width:200px">
+        <button onclick="apiFind()">Find</button>
+        <button class="secondary" onclick="loadPods()">List pods</button>
+      </div>
+      <pre id="find-out">Run find to search pods, deployments, services.</pre>
+      <h2>Pods</h2>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr><th>Name</th><th>Ready</th><th>Status</th><th>Command</th></tr></thead>
+        <tbody id="pods-table"></tbody></table>
+      </div>
+      <h2>Namespace</h2>
+      <div class="toolbar">
+        <select id="ns-select"><option value="">— active session required —</option></select>
+        <button onclick="switchNS()">Switch namespace</button>
+      </div>
+      <h2>Terminal command builder</h2>
+      <div class="toolbar">
+        <select id="builder-cmd">
+          <option value="logs">logs</option>
+          <option value="exec">exec</option>
+          <option value="ui">ui (k9s)</option>
+          <option value="k get pods">k get pods</option>
+          <option value="helm list">helm list</option>
+          <option value="pf svc/NAME 8080:80">pf port-forward</option>
+          <option value="watch deploy/NAME">watch rollout</option>
+          <option value="events --warnings">events</option>
+        </select>
+        <input id="builder-arg" placeholder="argument (optional)" style="min-width:180px">
+        <button onclick="copyBuilt()">Copy command</button>
+      </div>
+      <pre id="built-cmd">anchor logs api</pre>
+    </section>
+
+    <section id="maintenance" class="panel">
+      <h1>Maintenance</h1>
+      <div class="toolbar">
+        <button onclick="loadDoctor()">Run doctor</button>
+        <button class="secondary" onclick="loadLint()">Lint</button>
+        <button class="secondary" onclick="apiPrune(true)">Prune (dry-run)</button>
+        <button class="danger" onclick="apiPrune(false)">Prune</button>
+      </div>
+      <h2>Doctor</h2>
+      <div id="doctor-out" class="grid"></div>
+      <h2>Lint</h2>
+      <pre id="lint-out">—</pre>
+      <h2>Audit log</h2>
+      <pre id="audit-out">—</pre>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <div class="modal-bg" id="confirm-modal">
+    <div class="modal">
+      <h3>Production confirmation</h3>
+      <p class="meta" id="confirm-msg">Type the project name to continue.</p>
+      <input id="confirm-input" style="width:100%;margin:0.75rem 0" placeholder="confirmation text">
+      <div class="row">
+        <button onclick="submitConfirm()">Activate</button>
+        <button class="secondary" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let state = { overview: null, pendingUse: null };
+
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => document.querySelectorAll(s);
+
+    function toast(msg) {
+      const t = $('#toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    async function api(path, opts = {}) {
+      const r = await fetch(path, opts);
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw { status: r.status, data };
+      return data;
+    }
+
+    async function refresh() {
+      try {
+        state.overview = await api('/api/overview');
+        renderOverview();
+        renderProjects();
+        renderCommands();
+        loadNamespaces();
+      } catch (e) {
+        toast('Failed to load: ' + (e.data?.error || e.message));
+      }
+    }
+
+    function tierBadge(tier) {
+      if ((tier || '').toLowerCase() === 'production') return '<span class="badge prod">production</span>';
+      return `<span class="badge neutral">${tier || 'dev'}</span>`;
+    }
+
+    function renderOverview() {
+      const o = state.overview;
+      $('#version').textContent = 'v' + (o.version || '?');
+      const s = o.session;
+      const card = $('#session-card');
+      if (!s) {
+        card.innerHTML = '<div class="empty">No active session — activate a project below or from Projects tab.</div>';
+      } else {
+        const aws = s.aws_valid
+          ? `<span class="badge ok">AWS ok</span> ${s.aws_expires || ''}`
+          : `<span class="badge bad">AWS</span> ${s.aws_hint || 'invalid'}`;
+        const cluster = s.cluster_ok
+          ? '<span class="badge ok">cluster reachable</span>'
+          : `<span class="badge bad">cluster</span> ${s.cluster_err || ''}`;
+        card.innerHTML = `
+          <h3>${s.project} ${tierBadge(s.tier)} ${s.readonly ? '<span class="badge warn">read-only</span>' : ''}</h3>
+          <div class="meta">
+            <strong>AWS</strong> ${s.aws_profile} · ${s.aws_region}${s.account_id ? ' · ' + s.account_id : ''}<br>
+            <strong>EKS</strong> ${s.cluster}<br>
+            <strong>K8s</strong> ${s.context} / ${s.namespace}<br>
+            ${aws}<br>${cluster}
+          </div>
+          <div class="row">
+            <button class="secondary" onclick="copyShare()">Copy session</button>
+          </div>`;
+        const linksEl = $('#quick-links');
+        linksEl.innerHTML = '';
+        if (s.links) {
+          Object.keys(s.links).sort().forEach(name => {
+            const chip = document.createElement('span');
+            chip.className = 'link-chip';
+            chip.textContent = name;
+            chip.onclick = () => apiOpenLink(name);
+            linksEl.appendChild(chip);
+          });
+        } else {
+          linksEl.innerHTML = '<span class="meta">No links — add links: to project yaml</span>';
+        }
+        $('#notes-block').textContent = s.notes?.trim() || '(no notes)';
+      }
+      const recent = $('#recent-list');
+      recent.innerHTML = '';
+      (o.recent || []).forEach(r => {
+        const d = document.createElement('div');
+        d.className = 'card';
+        d.innerHTML = `<h3>${r.project}</h3><div class="meta">${r.namespace}</div>
+          <div class="row"><button onclick="activate('${r.project}','${r.namespace}')">Switch</button></div>`;
+        recent.appendChild(d);
+      });
+    }
+
+    function renderProjects() {
+      const grid = $('#projects-grid');
+      grid.innerHTML = '';
+      (state.overview?.projects || []).forEach(p => {
+        const d = document.createElement('div');
+        d.className = 'card';
+        d.innerHTML = `
+          <h3>${p.name} ${p.active ? '<span class="badge ok">active</span>' : ''} ${tierBadge(p.tier)}</h3>
+          <div class="meta">${p.cluster}<br>${p.aws_profile} · ${p.region}</div>
+          ${p.notes_preview ? `<p class="meta" style="margin-top:0.5rem">${p.notes_preview}</p>` : ''}
+          <div class="row">
+            <button onclick="activate('${p.name}','')">Activate</button>
+            ${p.links ? Object.keys(p.links).slice(0,2).map(k =>
+              `<button class="secondary" onclick="openProjectLink('${p.name}','${k}')">${k}</button>`).join('') : ''}
+          </div>`;
+        grid.appendChild(d);
+      });
+    }
+
+    function renderCommands() {
+      const cmds = state.overview?.commands || [];
+      const groups = [...new Set(cmds.map(c => c.group))].sort();
+      const sel = $('#cmd-group');
+      sel.innerHTML = '<option value="">All groups</option>' +
+        groups.map(g => `<option value="${g}">${g}</option>`).join('');
+      const filter = () => {
+        const q = $('#cmd-filter').value.toLowerCase();
+        const g = $('#cmd-group').value;
+        const tbody = $('#commands-table');
+        tbody.innerHTML = '';
+        cmds.filter(c => (!g || c.group === g) &&
+          (c.name + c.short + c.usage).toLowerCase().includes(q)).forEach(c => {
+          const ex = c.example || c.usage;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${c.name}</code> ${c.interactive ? '<span class="badge neutral">terminal</span>' : ''}</td>
+            <td>${c.short}</td>
+            <td><code>${ex}</code></td>
+            <td><button class="secondary" onclick="copyText('${ex.replace(/'/g, "\\'")}')">Copy</button></td>`;
+          tbody.appendChild(tr);
+        });
+      };
+      $('#cmd-filter').oninput = filter;
+      sel.onchange = filter;
+      filter();
+    }
+
+    async function activate(project, namespace, confirmText) {
+      try {
+        const body = { project, namespace, confirm_text: confirmText || '' };
+        await api('/api/use', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        toast('Activated ' + project);
+        closeModal();
+        refresh();
+      } catch (e) {
+        if (e.status === 428 && e.data?.confirm_text) {
+          state.pendingUse = { project, namespace };
+          $('#confirm-msg').textContent = `Type "${e.data.confirm_text}" to switch to production.`;
+          $('#confirm-input').value = '';
+          $('#confirm-modal').classList.add('show');
+        } else {
+          toast(e.data?.error || 'Activate failed');
+        }
+      }
+    }
+
+    function submitConfirm() {
+      const u = state.pendingUse;
+      if (!u) return;
+      activate(u.project, u.namespace, $('#confirm-input').value);
+    }
+
+    function closeModal() {
+      $('#confirm-modal').classList.remove('show');
+      state.pendingUse = null;
+    }
+
+    async function apiLogin(all) {
+      try {
+        await api('/api/login' + (all ? '?all=true' : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        toast(all ? 'Logged in all profiles' : 'SSO login complete');
+        refresh();
+      } catch (e) { toast(e.data?.error || 'Login failed — complete browser SSO'); }
+    }
+
+    async function apiSync() {
+      try {
+        const r = await api('/api/sync', { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } });
+        toast(`Sync: ${r.ok} ok, ${r.fail} failed`);
+        refresh();
+      } catch (e) { toast(e.data?.error || 'Sync failed'); }
+    }
+
+    async function copyShare() {
+      try {
+        const d = await api('/api/share');
+        const text = Object.entries(d).map(([k,v]) => k + ': ' + v).join('\n');
+        await copyText(text);
+      } catch (e) { toast('No active session'); }
+    }
+
+    async function apiOpenLink(name) {
+      try {
+        await api('/api/open-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+        toast('Opened ' + name);
+      } catch (e) { toast(e.data?.error || 'Open failed'); }
+    }
+
+    function openProjectLink(project, name) {
+      activate(project, '').then(() => setTimeout(() => apiOpenLink(name), 500));
+    }
+
+    async function apiFind() {
+      const q = $('#find-q').value;
+      if (!q) return;
+      try {
+        const r = await api('/api/find?q=' + encodeURIComponent(q));
+        $('#find-out').textContent = r.output || '(no matches)';
+      } catch (e) { $('#find-out').textContent = e.data?.error || 'Find failed'; }
+    }
+
+    async function loadPods() {
+      try {
+        const pods = await api('/api/pods');
+        const tbody = $('#pods-table');
+        tbody.innerHTML = '';
+        pods.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${p.Name}</td><td>${p.Ready}</td><td>${p.Status}</td>
+            <td><button class="secondary" onclick="copyText('anchor exec ${p.Name}')">exec</button>
+            <button class="secondary" onclick="copyText('anchor logs ${p.Name}')">logs</button></td>`;
+          tbody.appendChild(tr);
+        });
+      } catch (e) { toast(e.data?.error || 'List pods failed'); }
+    }
+
+    async function loadNamespaces() {
+      try {
+        const ns = await api('/api/namespaces');
+        const sel = $('#ns-select');
+        sel.innerHTML = ns.map(n => `<option value="${n}">${n}</option>`).join('');
+        const cur = state.overview?.session?.namespace;
+        if (cur) sel.value = cur;
+      } catch (_) {}
+    }
+
+    async function switchNS() {
+      const ns = $('#ns-select').value;
+      if (!ns) return;
+      try {
+        await api('/api/ns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ namespace: ns }) });
+        toast('Namespace → ' + ns);
+        refresh();
+      } catch (e) { toast(e.data?.error || 'Switch failed'); }
+    }
+
+    async function loadDoctor() {
+      const r = await api('/api/doctor');
+      const el = $('#doctor-out');
+      el.innerHTML = '';
+      (r.checks || []).forEach(c => {
+        const d = document.createElement('div');
+        d.className = 'card';
+        d.innerHTML = `<h3>${c.name} ${c.ok ? '<span class="badge ok">ok</span>' : '<span class="badge bad">fail</span>'}</h3>
+          <div class="meta">${c.hint || '—'}</div>`;
+        el.appendChild(d);
+      });
+    }
+
+    async function loadLint() {
+      try {
+        const issues = await api('/api/lint');
+        if (!issues.length) { $('#lint-out').textContent = '✓ no issues'; return; }
+        $('#lint-out').textContent = issues.map(i => `[${i.Level}] ${i.Project}: ${i.Message}`).join('\n');
+      } catch (e) { $('#lint-out').textContent = e.data?.error || 'Lint failed'; }
+    }
+
+    async function apiPrune(dry) {
+      try {
+        const r = await api('/api/prune?dry_run=' + dry, { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } });
+        toast(dry ? 'Would remove: ' + (r.removed?.length || 0) : 'Removed: ' + (r.removed?.length || 0));
+      } catch (e) { toast(e.data?.error || 'Prune failed'); }
+    }
+
+    async function loadAudit() {
+      try {
+        const lines = await api('/api/audit?lines=30');
+        $('#audit-out').textContent = lines?.length ? lines.join('\n') : '(empty)';
+      } catch (e) { $('#audit-out').textContent = '—'; }
+    }
+
+    function copyBuilt() {
+      const base = $('#builder-cmd').value;
+      const arg = $('#builder-arg').value.trim();
+      let cmd = 'anchor ' + base;
+      if (arg && !base.includes('NAME')) cmd += ' ' + arg;
+      else if (base.includes('NAME') && arg) cmd = cmd.replace('NAME', arg);
+      $('#built-cmd').textContent = cmd;
+      copyText(cmd);
+    }
+
+    async function copyText(t) {
+      try {
+        await navigator.clipboard.writeText(t);
+        toast('Copied');
+      } catch (_) {
+        prompt('Copy:', t);
+      }
+    }
+
+    $$('#nav button').forEach(btn => {
+      btn.onclick = () => {
+        $$('#nav button').forEach(b => b.classList.remove('active'));
+        $$('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        $('#' + btn.dataset.panel).classList.add('active');
+        if (btn.dataset.panel === 'maintenance') { loadDoctor(); loadLint(); loadAudit(); }
+        if (btn.dataset.panel === 'ops') loadPods();
+      };
+    });
+
+    refresh();
+    setInterval(refresh, 60000);
+  </script>
+</body>
+</html>

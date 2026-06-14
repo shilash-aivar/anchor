@@ -1,8 +1,12 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
+	"time"
 
 	"anchor/internal/awsx"
 	"anchor/internal/config"
@@ -13,12 +17,29 @@ import (
 var loginCmd = &cobra.Command{
 	Use:   "login [profile]",
 	Short: "Authenticate with AWS SSO",
-	Long:  "Runs `aws sso login`. Pass a profile name, --all for every project profile, or omit for active session.",
-	Args:  cobra.MaximumNArgs(1),
+	Long: `Runs aws sso login for a profile.
+
+  anchor login                  # active session profile
+  anchor login my-profile       # specific profile
+  anchor login --all            # every profile used by projects
+  anchor login --missing        # only profiles that need refresh
+  anchor login --status         # show credential status (no browser)`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		all, _ := cmd.Flags().GetBool("all")
-		if all {
-			if err := loginAllProfiles(); err != nil {
+		missing, _ := cmd.Flags().GetBool("missing")
+		status, _ := cmd.Flags().GetBool("status")
+		jsonOut, _ := cmd.Flags().GetBool("json")
+		continueOnErr, _ := cmd.Flags().GetBool("continue")
+
+		if status {
+			if err := loginStatus(jsonOut); err != nil {
+				exitErr(err)
+			}
+			return
+		}
+		if missing || all {
+			if err := loginProfiles(all, missing, continueOnErr); err != nil {
 				exitErr(err)
 			}
 			return
@@ -47,29 +68,149 @@ func runLogin(profile string) error {
 	return awsx.SSOLogin(profile)
 }
 
-func loginAllProfiles() error {
+type profileLoginStatus struct {
+	Profile   string `json:"profile"`
+	Valid     bool   `json:"valid"`
+	Account   string `json:"account_id,omitempty"`
+	ExpiresIn string `json:"expires_in,omitempty"`
+	Hint      string `json:"hint,omitempty"`
+	Projects  []string `json:"projects,omitempty"`
+}
+
+func projectProfiles() (map[string][]string, []string, error) {
 	projects, err := config.LoadAllProjects()
+	if err != nil {
+		return nil, nil, err
+	}
+	byProfile := map[string][]string{}
+	var order []string
+	seen := map[string]bool{}
+	for _, p := range projects {
+		if p.AWSProfile == "" {
+			continue
+		}
+		byProfile[p.AWSProfile] = append(byProfile[p.AWSProfile], p.Name)
+		if !seen[p.AWSProfile] {
+			seen[p.AWSProfile] = true
+			order = append(order, p.AWSProfile)
+		}
+	}
+	sort.Strings(order)
+	return byProfile, order, nil
+}
+
+func loginStatus(jsonOut bool) error {
+	byProfile, order, err := projectProfiles()
 	if err != nil {
 		return err
 	}
-	if len(projects) == 0 {
+	if len(order) == 0 {
 		return fmt.Errorf("no projects configured")
 	}
-	seen := map[string]bool{}
-	for _, p := range projects {
-		if p.AWSProfile == "" || seen[p.AWSProfile] {
-			continue
+
+	var rows []profileLoginStatus
+	needLogin := 0
+	for _, profile := range order {
+		st := awsx.CredentialStatusForProfile(profile)
+		row := profileLoginStatus{
+			Profile:   profile,
+			Valid:     st.Valid,
+			Account:   st.Account,
+			ExpiresIn: st.ExpiresIn,
+			Hint:      st.Hint,
+			Projects:  byProfile[profile],
 		}
-		seen[p.AWSProfile] = true
-		fmt.Printf("\n── profile %s ──\n", p.AWSProfile)
-		if err := awsx.SSOLogin(p.AWSProfile); err != nil {
-			return err
+		rows = append(rows, row)
+		if awsx.NeedsLogin(profile, 30*time.Minute) {
+			needLogin++
 		}
 	}
-	fmt.Fprintln(os.Stderr, "\n✓ logged in all project profiles")
+
+	if jsonOut {
+		enc, _ := json.MarshalIndent(rows, "", "  ")
+		fmt.Println(string(enc))
+		return nil
+	}
+
+	fmt.Println("AWS SSO status (project profiles):")
+	for _, row := range rows {
+		icon := "✓"
+		if !row.Valid {
+			icon = "✗"
+		} else if row.Hint != "" {
+			icon = "⚠"
+		}
+		line := fmt.Sprintf("  %s %-24s", icon, row.Profile)
+		if row.Account != "" {
+			line += fmt.Sprintf(" account=%s", row.Account)
+		}
+		if row.ExpiresIn != "" {
+			line += fmt.Sprintf(" (%s)", row.ExpiresIn)
+		}
+		fmt.Println(line)
+		if row.Hint != "" {
+			fmt.Printf("      %s\n", row.Hint)
+		}
+		if len(row.Projects) > 0 {
+			fmt.Printf("      projects: %s\n", strings.Join(row.Projects, ", "))
+		}
+	}
+	fmt.Println()
+	if needLogin > 0 {
+		fmt.Printf("%d profile(s) need login — run: anchor login --missing\n", needLogin)
+	} else {
+		fmt.Println("All profiles OK.")
+	}
+	return nil
+}
+
+func loginProfiles(all, missingOnly, continueOnErr bool) error {
+	_, order, err := projectProfiles()
+	if err != nil {
+		return err
+	}
+	if len(order) == 0 {
+		return fmt.Errorf("no projects configured")
+	}
+
+	var targets []string
+	if missingOnly {
+		for _, profile := range order {
+			if awsx.NeedsLogin(profile, 30*time.Minute) {
+				targets = append(targets, profile)
+			}
+		}
+	} else {
+		targets = order
+	}
+	if len(targets) == 0 {
+		fmt.Println("✓ all profiles have valid credentials")
+		return nil
+	}
+
+	fail := 0
+	for _, profile := range targets {
+		fmt.Printf("\n── profile %s ──\n", profile)
+		if err := awsx.SSOLogin(profile); err != nil {
+			fail++
+			fmt.Fprintf(os.Stderr, "✗ %v\n", err)
+			if !continueOnErr {
+				return err
+			}
+			continue
+		}
+	}
+	if fail > 0 {
+		return fmt.Errorf("%d profile(s) failed to login", fail)
+	}
+	fmt.Fprintln(os.Stderr, "\n✓ login complete")
 	return nil
 }
 
 func init() {
 	loginCmd.Flags().Bool("all", false, "Login every AWS profile used by configured projects")
+	loginCmd.Flags().Bool("missing", false, "Login only profiles with expired or expiring credentials")
+	loginCmd.Flags().Bool("status", false, "Show SSO credential status (no browser)")
+	loginCmd.Flags().Bool("json", false, "JSON output (with --status)")
+	loginCmd.Flags().Bool("continue", false, "With --all or --missing, continue if a profile fails")
 }
